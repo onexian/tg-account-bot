@@ -1,0 +1,12 @@
+.buildpath
+.hgignore.swp
+.project
+.orig
+.swp
+.idea/
+.settings/
+.vscode/
+.DS_Store
+.vscode/
+main
+/.env
