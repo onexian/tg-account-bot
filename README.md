@@ -40,8 +40,7 @@ CREATE TABLE `transactions`
     `note`       text COLLATE utf8mb4_general_ci,
     `created_at` timestamp                                            NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    KEY `user_id` (`user_id`),
-    CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    KEY `user_id` (`user_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;
