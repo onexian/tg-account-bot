@@ -2,11 +2,32 @@ package models
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
+
+func HandleSetCommands(bot *tgbotapi.BotAPI) {
+	commands := []tgbotapi.BotCommand{
+		{Command: "start", Description: "开始使用"},
+		{Command: "add", Description: "添加记录"},
+		{Command: "list", Description: "查看记录"},
+		{Command: "balance", Description: "查看余额"},
+		{Command: "summary", Description: "查看总收支"},
+		{Command: "week", Description: "查看本周支出"},
+		{Command: "month", Description: "查看本月支出"},
+	}
+
+	cfg := tgbotapi.NewSetMyCommands(commands...)
+
+	if _, err := bot.Request(cfg); err != nil {
+		log.Printf("设置命令菜单失败: %v", err)
+	} else {
+		log.Println("命令菜单设置成功！")
+	}
+}
 
 func HandleStart(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
 	message := `欢迎使用饭堂记账机器人！
