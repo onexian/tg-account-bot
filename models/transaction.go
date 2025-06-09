@@ -58,6 +58,7 @@ func GetLatestTransactions(limit int) ([]Transaction, error) {
                COALESCE(u.username, u.first_name, '') AS name
         FROM transactions t
         LEFT JOIN users u ON t.user_id = u.id
+        WHERE t.id >= (SELECT id FROM transactions WHERE type = 'clear' ORDER BY created_at DESC LIMIT 1)
         ORDER BY t.created_at DESC
         LIMIT ?`, limit)
 	if err != nil {
@@ -85,11 +86,11 @@ func (t *Transaction) UserDisplayName() string {
 }
 
 func CalculateTotalBalance() (income, expense float64, err error) {
-	err = db.QueryRow(`SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'income'`).Scan(&income)
+	err = db.QueryRow(`SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE id > (SELECT id FROM transactions WHERE type = 'clear' ORDER BY created_at DESC LIMIT 1) AND type = 'income'`).Scan(&income)
 	if err != nil {
 		return
 	}
-	err = db.QueryRow(`SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'expense'`).Scan(&expense)
+	err = db.QueryRow(`SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE id > (SELECT id FROM transactions WHERE type = 'clear' ORDER BY created_at DESC LIMIT 1) AND type = 'expense'`).Scan(&expense)
 	return
 }
 
@@ -100,6 +101,7 @@ func GetUserSummary() ([]UserSummary, error) {
                SUM(CASE WHEN t.type='expense' THEN t.amount ELSE 0 END) AS expense
         FROM transactions t
         LEFT JOIN users u ON t.user_id = u.id
+        WHERE t.id >= (SELECT id FROM transactions WHERE type = 'clear' ORDER BY created_at DESC LIMIT 1)
         GROUP BY t.user_id`)
 	if err != nil {
 		return nil, err
@@ -125,14 +127,14 @@ func GetWeeklyExpense(isLast bool) (float64, error) {
 		query = `
 			SELECT IFNULL(SUM(amount), 0)
 			FROM transactions
-			WHERE type = 'expense'
+			WHERE id > (SELECT id FROM transactions WHERE type = 'clear' ORDER BY created_at DESC LIMIT 1) AND type = 'expense'
 			  AND YEARWEEK(DATE(created_at), 1) = YEARWEEK(CURDATE() - INTERVAL 1 WEEK, 1)
 		`
 	} else {
 		query = `
 			SELECT IFNULL(SUM(amount), 0)
 			FROM transactions
-			WHERE type = 'expense'
+			WHERE id > (SELECT id FROM transactions WHERE type = 'clear' ORDER BY created_at DESC LIMIT 1) AND type = 'expense'
 			  AND YEARWEEK(DATE(created_at), 1) = YEARWEEK(CURDATE(), 1)
 		`
 	}
@@ -149,14 +151,14 @@ func GetMonthlyExpense(isLast bool) (float64, error) {
 		query = `
 			SELECT IFNULL(SUM(amount), 0)
 			FROM transactions
-			WHERE type = 'expense'
+			WHERE id > (SELECT id FROM transactions WHERE type = 'clear' ORDER BY created_at DESC LIMIT 1) AND type = 'expense'
 			  AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m')
 		`
 	} else {
 		query = `
 			SELECT IFNULL(SUM(amount), 0)
 			FROM transactions
-			WHERE type = 'expense'
+			WHERE id > (SELECT id FROM transactions WHERE type = 'clear' ORDER BY created_at DESC LIMIT 1) AND type = 'expense'
 			  AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
 		`
 	}

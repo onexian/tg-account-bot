@@ -42,12 +42,18 @@ func main() {
 		case "start":
 			models.HandleStart(bot, update.Message)
 		case "add":
+
 			models.HandleRecord(bot, update.Message)
 		case "list":
+
 			models.HandleList(bot, update.Message)
+		case "clear":
+			models.HandleClear(bot, update.Message)
 		case "balance":
+
 			models.HandleBalance(bot, update.Message)
 		case "summary":
+
 			models.HandleSummary(bot, update.Message)
 		case "week":
 			models.HandleWeek(bot, update.Message)

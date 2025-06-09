@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,7 @@ func HandleSetCommands(bot *tgbotapi.BotAPI) {
 		{Command: "start", Description: "开始使用"},
 		{Command: "add", Description: "添加记录"},
 		{Command: "list", Description: "查看记录"},
+		{Command: "clear", Description: "结余历史"},
 		{Command: "balance", Description: "查看余额"},
 		{Command: "summary", Description: "查看总收支"},
 		{Command: "week", Description: "查看本周支出"},
@@ -35,6 +37,7 @@ func HandleStart(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
 可用命令：
 /add [+/-]金额 备注 - 添加一条支出或收入记录
 /list - 查看所有记录
+/clear - 结余历史
 /balance - 查看总余额
 /summary - 每人总收支统计
 /week [last] - 本周或上周支出总额
@@ -107,12 +110,67 @@ func HandleList(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
 		typeLabel := map[string]string{
 			"income":  "收入",
 			"expense": "支出",
+			"clear":   "结余",
 		}[tx.Type]
 
 		sb.WriteString(fmt.Sprintf("%d. [%s] %.2f - %s（%s）by @%s\n", i+1, typeLabel, tx.Amount, tx.Note, tx.CreatedAt.Format("2006-01-02 15:04"), tx.UserDisplayName()))
 	}
 
 	bot.Send(tgbotapi.NewMessage(msg.Chat.ID, sb.String()))
+}
+
+func HandleClear(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
+
+	tgUserID := int64(msg.From.ID)
+	adminUIDsStr := os.Getenv("TELEGRAM_ADMIN_UID")
+	if adminUIDsStr != "" {
+		adminList := strings.Split(adminUIDsStr, ",")
+		isAdmin := false
+		for _, uidStr := range adminList {
+			uidStr = strings.TrimSpace(uidStr)
+			if uidStr == "" {
+				continue
+			}
+			uid, err := strconv.ParseInt(uidStr, 10, 64)
+			if err != nil {
+				continue // 跳过无效 UID
+			}
+			if tgUserID == uid {
+				isAdmin = true
+				break
+			}
+		}
+		if !isAdmin {
+			bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ 非管理员账号，禁止使用该命令"))
+			return
+		}
+	}
+
+	// 查询最后一条记录
+	txs, err := GetLatestTransactions(1)
+	if err != nil {
+		bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "⚠️ 查询记录失败: "+err.Error()))
+		return
+	}
+
+	if len(txs) > 0 && txs[0].Type == "clear" {
+		bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "ℹ️ 上一条已为 clear，无需重复记录"))
+		return
+	}
+
+	tx := Transaction{
+		UserID: tgUserID,
+		Type:   "clear",
+		Amount: 0,
+		Note:   "结余清空",
+	}
+
+	if err := InsertTransaction(tx); err != nil {
+		bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "清空失败: "+err.Error()))
+		return
+	}
+
+	bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "✅ 结余成功，历史数据不再统计"))
 }
 
 func HandleBalance(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {

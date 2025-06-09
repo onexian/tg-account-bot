@@ -6,6 +6,7 @@
 
 - ✅ 记录收入和支出（使用 `/add` 命令，格式简洁，如：`/add +10 午餐补贴` 或 `/add -8 晚饭`）
 - 📋 查看最近交易记录（通过 `/list` 命令查看全部记录）
+- 💰 结余清空所有交易记录（通过 `/clear` 命令清空全部记录）
 - 💰 查看当前总余额（使用 `/balance` 命令快速获取当前总资产）
 - 📊 查看每人收支统计（使用 `/summary` 命令）
 - 📆 查看本周/上周支出总额（使用 `/week` 和 `/week last`）
@@ -35,7 +36,7 @@ CREATE TABLE `transactions`
 (
     `id`         bigint                                               NOT NULL AUTO_INCREMENT,
     `user_id`    bigint                                               NOT NULL,
-    `type`       enum ('income','expense') COLLATE utf8mb4_general_ci NOT NULL,
+    `type`       enum ('income','expense', 'clear') COLLATE utf8mb4_general_ci NOT NULL,
     `amount`     decimal(10, 2)                                       NOT NULL,
     `note`       text COLLATE utf8mb4_general_ci,
     `created_at` timestamp                                            NULL DEFAULT CURRENT_TIMESTAMP,
